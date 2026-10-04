@@ -123,7 +123,6 @@
         }
         
         .cert-outer-border {
-            /* تصغير الأبعاد لتتناسب داخل ورقة A4 وتترك هوامش آمنة للطباعة */
             width: 185mm; height: 265mm; background: #fff;
             padding: 8mm; box-sizing: border-box; position: relative;
             display: flex; align-items: center; justify-content: center;
@@ -139,7 +138,9 @@
         }
 
         .cert-header-section { border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 10px; }
-        .cert-main-title { font-size: 4rem; color: var(--school-blue); font-weight: 900; margin: 0; letter-spacing: 1px; }
+        
+        .cert-main-title { font-size: 2.8rem; color: var(--school-blue); font-weight: 900; margin: 0; letter-spacing: 1px; }
+        
         .school-tag { font-size: 1.8rem; color: #c0392b; font-weight: 900; margin-top: 5px; display: block; }
 
         .cert-body-content { font-size: 1.4rem; color: #333; line-height: 1.6; flex-grow: 1; display: flex; flex-direction: column; justify-content: center; }
@@ -152,8 +153,8 @@
         .grade-val { font-size: 1.5rem; color: #2d3436; font-weight: 700; border-top: 1px dashed #ccc; padding-top: 8px; margin-top: 5px; }
 
         .score-medal {
-            font-size: 3rem; color: #27ae60; font-weight: 900;
-            background: #f0fff4; border: 4px dashed #27ae60;
+            font-size: 3rem; color: #0277bd; font-weight: 900;
+            background: #e1f5fe; border: 4px dashed #0277bd;
             padding: 10px 40px; border-radius: 50px; display: inline-block; margin: 15px 0;
         }
 
@@ -238,9 +239,7 @@
             <h2 style="color:#9b59b6;">المرحلة 3 : المقارنة السريعة</h2>
             <h3 style="font-size: 1.3rem;">اسحبي الكلمة (أو انقري عليها) ثم ضعيها في العمود المناسب:</h3>
             
-            <div id="drag-items-container" class="drag-container">
-                <!-- سيتم حقن الكلمات هنا برمجياً -->
-            </div>
+            <div id="drag-items-container" class="drag-container"></div>
 
             <div class="drop-zones">
                 <div class="drop-zone" data-type="data" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" onclick="tapDrop(event, this)">
@@ -313,7 +312,38 @@
     <script>
         let score = 0, mcqIdx = 0, tfIdx = 0, dragCompleted = 0;
         
-        // بيانات الخيارات المتعددة
+        // --- نظام الصوت برمجياً (Web Audio API) ---
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        let audioCtx;
+        function initAudio() { if (!audioCtx) audioCtx = new AudioContext(); }
+        
+        function playSound(isCorrect) {
+            initAudio();
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if(isCorrect) {
+                // صوت النجاح (نغمة تصاعدية مبهجة)
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.5);
+            } else {
+                // صوت الخطأ (نغمة تنبيه خفيفة ولطيفة - تم التعديل هنا)
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(150, audioCtx.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.25);
+            }
+        }
+
         const mcqData = [
             { q: "ما المقصود بالبيانات؟", o: ["النتائج المفيدة الناتجة عن معالجة البيانات", "الحقائق الأولية الموجودة حولنا بشكلها الظاهر", "المعلومات المنظمة والمترابطة"], a: 1 },
             { q: "ما المقصود بالمعلومات؟", o: ["أرقام ورموز غير مترابطة", "بيانات أولية غير منظمة", "المعاني والمعارف التي يدركها الإنسان"], a: 2 },
@@ -327,7 +357,6 @@
             { q: "كيف تُنظم البيانات داخل الجدول؟", o: ["في صفوف وأعمدة", "في صور ومقاطع فيديو", "في ملفات صوتية فقط"], a: 0 }
         ];
 
-        // بيانات الصح والخطأ
         const tfData = [
             { q: "المعلومات: هي حقائق أولية لم يتم تنظيمها ولا تفسيرها.", a: false },
             { q: "البيانات: هي المعارف والمعاني التي يدركها الإنسان.", a: false },
@@ -337,7 +366,6 @@
             { q: "السجل في قاعدة البيانات: هو مجموعة كاملة من المعلومات التي تشير إلى كيان معين.", a: true }
         ];
 
-        // بيانات السحب والإفلات
         const dragWords = [
             { id: "w1", text: "مفهومة", type: "info" },
             { id: "w2", text: "غير مفهومة", type: "data" },
@@ -351,12 +379,12 @@
 
         function startGame() {
             if(!document.getElementById('pName').value || !document.getElementById('pGrade').value) { alert("لطفاً أدخلي اسمك وصفك الدراسي"); return; }
+            initAudio(); // تفعيل محرك الصوت
             document.getElementById('dispName').innerText = document.getElementById('pName').value;
             document.getElementById('topBar').style.display = 'block';
             loadMCQ(); showScreen('screen-mcq');
         }
 
-        // --- دوال المرحلة الأولى ---
         function loadMCQ() {
             if(mcqIdx >= mcqData.length) { loadTF(); showScreen('screen-tf'); return; }
             const item = mcqData[mcqIdx];
@@ -367,15 +395,14 @@
                 const b = document.createElement('button'); b.className = 'opt-btn'; b.innerText = txt;
                 b.onclick = () => {
                     const btns = container.querySelectorAll('button'); btns.forEach(btn => btn.disabled = true);
-                    if(i === item.a) { score++; b.classList.add('opt-correct'); document.getElementById('mcq-fb').innerText = "إجابة صحيحة ✨"; } 
-                    else { b.classList.add('opt-wrong'); container.children[item.a].classList.add('opt-correct'); document.getElementById('mcq-fb').innerText = "الإجابة الصحيحة بالأخضر"; }
+                    if(i === item.a) { playSound(true); score++; b.classList.add('opt-correct'); document.getElementById('mcq-fb').innerText = "إجابة صحيحة ✨"; } 
+                    else { playSound(false); b.classList.add('opt-wrong'); container.children[item.a].classList.add('opt-correct'); document.getElementById('mcq-fb').innerText = "الإجابة الصحيحة بالأخضر"; }
                     updateScore(); mcqIdx++; setTimeout(loadMCQ, 1500);
                 };
                 container.appendChild(b);
             });
         }
 
-        // --- دوال المرحلة الثانية ---
         function loadTF() {
             if(tfIdx >= tfData.length) { loadDrag(); showScreen('screen-drag'); return; }
             document.getElementById('tf-text').innerText = tfData[tfIdx].q;
@@ -385,93 +412,65 @@
         function ansTF(ans) {
             const item = tfData[tfIdx];
             const fb = document.getElementById('tf-fb');
-            if(ans === item.a) { score++; fb.innerText = "صحيح! أحسنتِ ✅"; fb.style.color = "#27ae60"; } 
-            else { fb.innerText = "خطأ ❌"; fb.style.color = "#e74c3c"; }
+            if(ans === item.a) { playSound(true); score++; fb.innerText = "صحيح! أحسنتِ ✅"; fb.style.color = "#27ae60"; } 
+            else { playSound(false); fb.innerText = "خطأ ❌"; fb.style.color = "#e74c3c"; }
             updateScore(); tfIdx++; setTimeout(loadTF, 1300);
         }
 
-        // --- دوال المرحلة الثالثة (السحب والإفلات) ---
         function loadDrag() {
             const container = document.getElementById('drag-items-container');
             container.innerHTML = "";
-            // خلط الكلمات عشوائياً
             let shuffled = dragWords.sort(() => Math.random() - 0.5);
             shuffled.forEach(w => {
                 const div = document.createElement('div');
-                div.className = 'drag-item';
-                div.id = w.id;
-                div.innerText = w.text;
-                div.setAttribute('data-type', w.type);
-                div.draggable = true;
-                
-                // أحداث السحب للكمبيوتر
+                div.className = 'drag-item'; div.id = w.id; div.innerText = w.text;
+                div.setAttribute('data-type', w.type); div.draggable = true;
                 div.ondragstart = (e) => { e.dataTransfer.setData("text", e.target.id); };
-                
-                // أحداث النقر للأجهزة اللوحية والجوالات كبديل للسحب
                 div.onclick = (e) => selectItemForTap(e.target);
-                
                 container.appendChild(div);
             });
         }
 
-        // منطق السحب بالماوس
         function allowDrop(ev) { ev.preventDefault(); ev.currentTarget.classList.add('over'); }
         function dragLeave(ev) { ev.currentTarget.classList.remove('over'); }
         function drop(ev) {
-            ev.preventDefault();
-            ev.currentTarget.classList.remove('over');
+            ev.preventDefault(); ev.currentTarget.classList.remove('over');
             let data = ev.dataTransfer.getData("text");
             if(!data) return;
             let draggedEl = document.getElementById(data);
             processDrop(draggedEl, ev.currentTarget);
         }
 
-        // منطق النقر (للجوالات)
         let selectedDragItem = null;
         function selectItemForTap(el) {
             if(!el.draggable) return;
             document.querySelectorAll('.drag-item').forEach(d => d.classList.remove('selected'));
-            selectedDragItem = el;
-            el.classList.add('selected');
+            selectedDragItem = el; el.classList.add('selected');
         }
-        function tapDrop(ev, zone) {
-            if(!selectedDragItem) return;
-            processDrop(selectedDragItem, zone);
-        }
+        function tapDrop(ev, zone) { if(selectedDragItem) processDrop(selectedDragItem, zone); }
 
-        // معالجة الإفلات المشتركة
         function processDrop(itemEl, zoneEl) {
             let targetType = zoneEl.getAttribute('data-type');
             let itemType = itemEl.getAttribute('data-type');
 
             if(targetType === itemType) {
-                // إجابة صحيحة
-                itemEl.classList.remove('selected');
-                itemEl.classList.add('dropped-item');
-                itemEl.classList.remove('drag-item');
-                itemEl.draggable = false;
-                itemEl.onclick = null; // تعطيل النقر بعد التثبيت
+                playSound(true); // تشغيل صوت النجاح
+                itemEl.classList.remove('selected'); itemEl.classList.add('dropped-item');
+                itemEl.classList.remove('drag-item'); itemEl.draggable = false; itemEl.onclick = null;
                 zoneEl.querySelector('.drop-area').appendChild(itemEl);
                 score++; updateScore(); dragCompleted++;
                 selectedDragItem = null;
-                
-                if(dragCompleted === dragWords.length) {
-                    document.getElementById('btn-finish-drag').style.display = "block";
-                }
+                if(dragCompleted === dragWords.length) document.getElementById('btn-finish-drag').style.display = "block";
             } else {
-                // إجابة خاطئة
-                itemEl.style.backgroundColor = "#ff7675";
-                itemEl.style.color = "#fff";
+                playSound(false); // تشغيل صوت الخطأ
+                itemEl.style.backgroundColor = "#ff7675"; itemEl.style.color = "#fff";
                 setTimeout(() => {
-                    itemEl.style.backgroundColor = "";
-                    itemEl.style.color = "";
-                    itemEl.classList.remove('selected');
-                    selectedDragItem = null;
+                    itemEl.style.backgroundColor = ""; itemEl.style.color = "";
+                    itemEl.classList.remove('selected'); selectedDragItem = null;
                 }, 800);
             }
         }
 
-        // --- دوال مساعدة ونهائية ---
         function updateScore() { document.getElementById('dispScore').innerText = score; }
 
         function showScreen(id) {
