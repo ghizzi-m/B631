@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>رحلة البيانات والمعلومات - المدرسة الابتدائية 122</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@600;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            --primary-btn: linear-gradient(to right, #da22ff 0%, #9733ee 51%, #da22ff 100%);
+            --success-btn: linear-gradient(to right, #11998e 0%, #38ef7d 51%, #11998e 100%);
+            --error-btn: linear-gradient(to right, #eb3349 0%, #f45c43 51%, #eb3349 100%);
+            --school-blue: #1e3799;
+            --cert-gold: #b8860b;
+        }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: var(--bg-gradient);
+            margin: 0; padding: 0;
+            color: #2d3436;
+            text-align: center;
+            min-height: 100vh;
+        }
+
+        /* الشريط العلوي */
+        .top-bar {
+            width: 100%; background: rgba(255, 255, 255, 0.98);
+            padding: 12px 0; position: fixed; top: 0; left: 0; z-index: 1000;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: none;
+            font-weight: 800;
+        }
+
+        .screen { 
+            display: none; width: 100%; padding-top: 90px; padding-bottom: 20px;
+            flex-direction: column; align-items: center; justify-content: center;
+            min-height: 100vh; box-sizing: border-box;
+        }
+        .active { display: flex; }
+
+        .card {
+            background: #fff; padding: 30px; border-radius: 30px;
+            box-shadow: 0 15px 50px rgba(0,0,0,0.15); width: 90%; max-width: 850px;
+            border: 4px solid #fff; margin-bottom: 20px;
+        }
+
+        h1 { color: #e84393; font-size: 2.5rem; margin-bottom: 10px; font-weight: 900; }
+
+        /* الأزرار */
+        .options-container { display: flex; flex-direction: column; gap: 12px; width: 100%; margin-top: 20px; }
+        .opt-btn {
+            width: 100%; padding: 15px; border-radius: 15px; border: 2px solid #dfe6e9;
+            background: #fdfdfd; font-family: 'Cairo'; font-size: 1.2rem; font-weight: 700;
+            cursor: pointer; transition: 0.3s; text-align: right;
+        }
+        .opt-btn:hover { border-color: #6c5ce7; background: #f8f7ff; }
+        .opt-correct { background: #d4edda !important; border-color: #28a745 !important; color: #155724; }
+        .opt-wrong { background: #f8d7da !important; border-color: #dc3545 !important; color: #721c24; }
+
+        .tf-container { display: flex; gap: 20px; justify-content: center; margin-top: 20px; }
+        .tf-btn {
+            flex: 1; max-width: 180px; height: 70px; border-radius: 15px; border: none;
+            color: white; font-family: 'Cairo'; font-weight: 900; font-size: 1.4rem; cursor: pointer;
+        }
+        .btn-true { background-image: var(--success-btn); }
+        .btn-false { background-image: var(--error-btn); }
+
+        .main-btn {
+            margin-top: 25px; padding: 12px 40px; background-image: var(--primary-btn);
+            color: white; border-radius: 50px; border: none; font-family: 'Cairo';
+            font-weight: 900; font-size: 1.3rem; cursor: pointer;
+        }
+
+        .feedback { font-weight: 800; font-size: 1.3rem; margin-top: 15px; min-height: 30px; }
+
+        /* تنسيقات مرحلة السحب والإفلات */
+        .drag-container { 
+            display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; 
+            margin-bottom: 25px; min-height: 60px; padding: 15px;
+            background: #f1f2f6; border-radius: 15px;
+        }
+        .drag-item { 
+            background: #ffeaa7; padding: 10px 20px; border-radius: 10px; 
+            font-weight: 800; cursor: grab; border: 2px solid #fdcb6e; 
+            font-size: 1.2rem; transition: 0.2s; user-select: none;
+        }
+        .drag-item:active { cursor: grabbing; transform: scale(0.95); }
+        .drag-item.selected { border: 3px dashed #d63031; background: #fab1a0; }
+        
+        .drop-zones { display: flex; gap: 20px; justify-content: center; width: 100%; flex-wrap: wrap; }
+        .drop-zone { 
+            flex: 1; min-width: 250px; border: 3px dashed #b2bec3; border-radius: 15px; 
+            padding: 15px; background: #fdfdfd; min-height: 250px; display: flex; flex-direction: column;
+            cursor: pointer; transition: 0.3s;
+        }
+        .drop-zone:hover, .drop-zone.over { border-color: #0984e3; background: #e3f2fd; }
+        .drop-zone h3 { margin-top: 0; color: #2d3436; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        .drop-area { flex-grow: 1; display: flex; flex-direction: column; gap: 10px; }
+        .dropped-item { 
+            background: #55efc4; color: #1e272e; border: none; text-align: center; 
+            padding: 10px; border-radius: 8px; font-weight: 800; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+
+        /* التذييل العام لجميع الصفحات */
+        .universal-footer {
+            display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;
+            padding: 20px 0; width: 100%; background: rgba(255,255,255,0.5);
+            margin-top: auto;
+        }
+        .footer-badge {
+            background: #fff; border: 1.5px solid #ddd; padding: 6px 15px; border-radius: 12px;
+            font-size: 0.9rem; font-weight: 800; color: #333; display: flex; align-items: center; gap: 6px;
+        }
+
+        /* =========================================
+           تنسيق الشهادة الاحترافي (للطباعة A4 مصغرة)
+           ========================================= */
+        #cert-screen { 
+            display: none; background: #f5f7fa; width: 100%; min-height: 100vh; 
+            padding: 20px 0; margin: 0; flex-direction: column; align-items: center; justify-content: center;
+        }
+        
+        .cert-outer-border {
+            /* تصغير الأبعاد لتتناسب داخل ورقة A4 وتترك هوامش آمنة للطباعة */
+            width: 185mm; height: 265mm; background: #fff;
+            padding: 8mm; box-sizing: border-box; position: relative;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2); margin-bottom: 20px;
+        }
+
+        .cert-inner-frame {
+            width: 100%; height: 100%; border: 10px double var(--cert-gold);
+            padding: 15mm; box-sizing: border-box; display: flex;
+            flex-direction: column; justify-content: space-between;
+            background-color: #fff; position: relative;
+            box-shadow: inset 0 0 0 3px var(--school-blue);
+        }
+
+        .cert-header-section { border-bottom: 2px solid #eee; padding-bottom: 15px; margin-bottom: 10px; }
+        .cert-main-title { font-size: 4rem; color: var(--school-blue); font-weight: 900; margin: 0; letter-spacing: 1px; }
+        .school-tag { font-size: 1.8rem; color: #c0392b; font-weight: 900; margin-top: 5px; display: block; }
+
+        .cert-body-content { font-size: 1.4rem; color: #333; line-height: 1.6; flex-grow: 1; display: flex; flex-direction: column; justify-content: center; }
+
+        .info-highlight-box {
+            background: #f9f9f9; border: 2px solid #eee; border-radius: 15px;
+            padding: 10px 25px; margin: 10px auto; width: 85%;
+        }
+        .name-val { font-size: 2.8rem; color: #e84393; font-weight: 900; display: block; margin-bottom: 5px; }
+        .grade-val { font-size: 1.5rem; color: #2d3436; font-weight: 700; border-top: 1px dashed #ccc; padding-top: 8px; margin-top: 5px; }
+
+        .score-medal {
+            font-size: 3rem; color: #27ae60; font-weight: 900;
+            background: #f0fff4; border: 4px dashed #27ae60;
+            padding: 10px 40px; border-radius: 50px; display: inline-block; margin: 15px 0;
+        }
+
+        .cert-signatures-grid {
+            display: flex; justify-content: space-between; margin-top: 20px;
+            padding-top: 15px; border-top: 2px solid #f0f0f0;
+        }
+        .sig-column { width: 32%; text-align: center; }
+        .sig-label { font-size: 1rem; color: #7f8c8d; margin-bottom: 5px; display: block; }
+        .sig-text { font-size: 1.2rem; font-weight: 900; color: #2d3436; padding-top: 5px; border-top: 2px solid #ddd; display: block; }
+
+        /* إعدادات الطباعة الدقيقة لتناسب A4 */
+        @media print {
+            @page { size: A4 portrait; margin: 0; }
+            body, html { width: 100%; height: 100%; background: #fff; padding: 0; margin: 0; }
+            .no-print { display: none !important; }
+            .screen { display: none !important; }
+            #cert-screen { display: flex !important; background: white; width: 100%; height: 100vh; justify-content: center; padding: 0; }
+            .cert-outer-border { width: 185mm; height: 265mm; padding: 0; margin: 0 auto; box-shadow: none; }
+            .cert-inner-frame { height: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="top-bar" id="topBar">
+        <span style="float: right; margin-right: 30px;">المبدعة: <span id="dispName" style="color:#e84393;"></span></span>
+        <span style="background:#ffeaa7; padding:4px 20px; border-radius:50px; margin-right:15px; color:#333;">النقاط: <span id="dispScore">0</span> / 24</span>
+    </div>
+
+    <div id="screen-login" class="screen active">
+        <div class="card">
+            <h1>🌸 رحلة البيانات والمعلومات 🌸</h1>
+            <p style="font-size: 1.6rem; font-weight: 800;">عالم المهارات الرقمية الممتع</p>
+            <input type="text" id="pName" class="opt-btn" style="text-align:center; max-width:450px; margin:10px auto; display:block;" placeholder="اسم الطالبة الثلاثي">
+            <input type="text" id="pGrade" class="opt-btn" style="text-align:center; max-width:450px; margin:10px auto; display:block;" placeholder="الصف الدراسي">
+            <button class="main-btn" onclick="startGame()">ابدأ التحدي 🚀</button>
+        </div>
+        <div class="universal-footer">
+            <div class="footer-badge">🎨 إعداد المعلمة: فلانة الفلاني</div>
+            <div class="footer-badge">🏫 المدرسة الابتدائية 122</div>
+            <div class="footer-badge">👑 قائدة المدرسة</div>
+        </div>
+    </div>
+
+    <!-- المرحلة 1: خيارات متعددة -->
+    <div id="screen-mcq" class="screen">
+        <div class="card">
+            <h2 style="color:#0984e3;">المرحلة 1 : اختاري الإجابة الصحيحة</h2>
+            <h3 id="mcq-text" style="font-size: 1.5rem; margin: 15px 0;">السؤال...</h3>
+            <div class="options-container" id="mcq-options"></div>
+            <div id="mcq-fb" class="feedback"></div>
+        </div>
+        <div class="universal-footer">
+            <div class="footer-badge">🎨 إعداد المعلمة: فلانة الفلاني</div>
+            <div class="footer-badge">🏫 المدرسة الابتدائية 122</div>
+            <div class="footer-badge">👑 قائدة المدرسة</div>
+        </div>
+    </div>
+
+    <!-- المرحلة 2: صح وخطأ -->
+    <div id="screen-tf" class="screen">
+        <div class="card">
+            <h2 style="color:#e17055;">المرحلة 2 : حددي الإجابة الصحيحة و الإجابة الخاطئة</h2>
+            <h3 id="tf-text" style="font-size: 1.7rem; margin: 20px 0;">العبارة...</h3>
+            <div class="tf-container">
+                <button class="tf-btn btn-true" onclick="ansTF(true)">صح ✅</button>
+                <button class="tf-btn btn-false" onclick="ansTF(false)">خطأ ❌</button>
+            </div>
+            <div id="tf-fb" class="feedback"></div>
+        </div>
+        <div class="universal-footer">
+            <div class="footer-badge">🎨 إعداد المعلمة: فلانة الفلاني</div>
+            <div class="footer-badge">🏫 المدرسة الابتدائية 122</div>
+            <div class="footer-badge">👑 قائدة المدرسة</div>
+        </div>
+    </div>
+
+    <!-- المرحلة 3: السحب والإفلات -->
+    <div id="screen-drag" class="screen">
+        <div class="card" style="max-width: 900px;">
+            <h2 style="color:#9b59b6;">المرحلة 3 : المقارنة السريعة</h2>
+            <h3 style="font-size: 1.3rem;">اسحبي الكلمة (أو انقري عليها) ثم ضعيها في العمود المناسب:</h3>
+            
+            <div id="drag-items-container" class="drag-container">
+                <!-- سيتم حقن الكلمات هنا برمجياً -->
+            </div>
+
+            <div class="drop-zones">
+                <div class="drop-zone" data-type="data" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" onclick="tapDrop(event, this)">
+                    <h3 style="color:#c0392b;">البيانات</h3>
+                    <div class="drop-area" id="area-data"></div>
+                </div>
+                <div class="drop-zone" data-type="info" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" onclick="tapDrop(event, this)">
+                    <h3 style="color:#27ae60;">المعلومات</h3>
+                    <div class="drop-area" id="area-info"></div>
+                </div>
+            </div>
+            <button id="btn-finish-drag" class="main-btn" style="display:none; margin: 20px auto;" onclick="finish()">استلام الشهادة 🎓</button>
+        </div>
+        <div class="universal-footer">
+            <div class="footer-badge">🎨 إعداد المعلمة: فلانة الفلاني</div>
+            <div class="footer-badge">🏫 المدرسة الابتدائية 122</div>
+            <div class="footer-badge">👑 قائدة المدرسة</div>
+        </div>
+    </div>
+
+    <!-- شاشة الشهادة -->
+    <div id="cert-screen">
+        <div class="cert-outer-border">
+            <div class="cert-inner-frame">
+                <div class="cert-header-section">
+                    <div class="cert-main-title">شهادة شكر وتقدير</div>
+                    <div class="school-tag">المدرسة الابتدائية 122</div>
+                </div>
+
+                <div class="cert-body-content">
+                    <div style="font-size: 1.4rem; color:#444;">بفخر واعتزاز، نتقدم بأجمل التهاني للطالبة المبدعة:</div>
+
+                    <div class="info-highlight-box">
+                        <span id="cert-name" class="name-val">...</span>
+                        <div class="grade-val">بالصف: <span id="cert-grade"></span></div>
+                    </div>
+
+                    <div style="font-size: 1.3rem;">لاجتيازها بنجاح كافة مهام درس "البيانات والمعلومات" <br> وحصولها على التقييم النهائي:</div>
+
+                    <div>
+                        <div class="score-medal"><span id="cert-score">0</span> / 24</div>
+                    </div>
+
+                    <div id="cert-msg" style="font-size: 1.3rem; color: #d35400; font-weight: 800;">...</div>
+                </div>
+
+                <div class="cert-signatures-grid">
+                    <div class="sig-column">
+                        <span class="sig-label">التاريخ</span>
+                        <span id="cert-date" class="sig-text"></span>
+                    </div>
+                    <div class="sig-column">
+                        <span class="sig-label">إعداد وتصميم المعلمة</span>
+                        <span class="sig-text">فلانة الفلاني</span>
+                    </div>
+                    <div class="sig-column">
+                        <span class="sig-label">الاعتماد</span>
+                        <span class="sig-text">قائدة المدرسة</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="no-print" style="margin: 20px 0; padding-bottom: 40px; display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+            <button class="main-btn" onclick="window.print()" style="background:#2d3436; margin-top:0;">🖨 طباعة الشهادة الورقية</button>
+            <button class="main-btn" onclick="location.reload()" style="background:#636e72; margin-top:0;">🔄 البدء من جديد</button>
+        </div>
+    </div>
+
+    <script>
+        let score = 0, mcqIdx = 0, tfIdx = 0, dragCompleted = 0;
+        
+        // بيانات الخيارات المتعددة
+        const mcqData = [
+            { q: "ما المقصود بالبيانات؟", o: ["النتائج المفيدة الناتجة عن معالجة البيانات", "الحقائق الأولية الموجودة حولنا بشكلها الظاهر", "المعلومات المنظمة والمترابطة"], a: 1 },
+            { q: "ما المقصود بالمعلومات؟", o: ["أرقام ورموز غير مترابطة", "بيانات أولية غير منظمة", "المعاني والمعارف التي يدركها الإنسان"], a: 2 },
+            { q: "أي مما يلي يمثل الفرق بين البيانات والمعلومات؟", o: ["البيانات حقائق أولية، والمعلومات نتائج مفيدة ناتجة عن معالجة البيانات", "البيانات منظمة، والمعلومات غير منظمة", "البيانات مخرجات الحاسب، والمعلومات مدخلاته"], a: 0 },
+            { q: "أي مما يلي مثال على البيانات الأبجدية؟", o: ["30.25", "08:30 م", "أحمد علي"], a: 2 },
+            { q: "ما الذي تتضمنه البيانات الأبجدية العددية؟", o: ["الحروف فقط", "الأرقام فقط", "الحروف والأرقام والرموز الخاصة"], a: 2 },
+            { q: "أي مما يلي مثال على البيانات الأبجدية العددية؟", o: ["المملكة العربية السعودية", "23-سبتمبر-2022", "أحمد"], a: 1 },
+            { q: "ما المقصود بقاعدة البيانات؟", o: ["مجموعة من الصور فقط", "مجموعة من البيانات الأولية التي يمكن تغييرها وفرزها والبحث عنها بسرعة", "مجموعة من الأرقام غير المنظمة"], a: 1 },
+            { q: "ماذا يمكن أن تحتوي قاعدة البيانات؟", o: ["سجلًا واحدًا فقط", "حقلًا واحدًا فقط", "جدولًا واحدًا أو أكثر"], a: 2 },
+            { q: "ما المقصود بالجدول في قاعدة البيانات؟", o: ["مجموعة من الصور ومقاطع الفيديو", "حاوية مرئية تنظم المعلومات في صفوف وأعمدة", "خلية تحتوي على نوع واحد من البيانات"], a: 1 },
+            { q: "كيف تُنظم البيانات داخل الجدول؟", o: ["في صفوف وأعمدة", "في صور ومقاطع فيديو", "في ملفات صوتية فقط"], a: 0 }
+        ];
+
+        // بيانات الصح والخطأ
+        const tfData = [
+            { q: "المعلومات: هي حقائق أولية لم يتم تنظيمها ولا تفسيرها.", a: false },
+            { q: "البيانات: هي المعارف والمعاني التي يدركها الإنسان.", a: false },
+            { q: "أنواع البيانات: أبجدية وعددية وأبجدية عددية.", a: true },
+            { q: "تتكون البيانات العددية من جميع الحروف الأبجدية والفراغات.", a: false },
+            { q: "في جداول قاعدة البيانات تكون الصفوف (أفقية) والأعمدة (عمودية).", a: true },
+            { q: "السجل في قاعدة البيانات: هو مجموعة كاملة من المعلومات التي تشير إلى كيان معين.", a: true }
+        ];
+
+        // بيانات السحب والإفلات
+        const dragWords = [
+            { id: "w1", text: "مفهومة", type: "info" },
+            { id: "w2", text: "غير مفهومة", type: "data" },
+            { id: "w3", text: "سهلة الفهم", type: "info" },
+            { id: "w4", text: "صعبة الفهم", type: "data" },
+            { id: "w5", text: "غير منظمة", type: "data" },
+            { id: "w6", text: "منظمة", type: "info" },
+            { id: "w7", text: "مخرجات", type: "info" },
+            { id: "w8", text: "مدخلات", type: "data" }
+        ];
+
+        function startGame() {
+            if(!document.getElementById('pName').value || !document.getElementById('pGrade').value) { alert("لطفاً أدخلي اسمك وصفك الدراسي"); return; }
+            document.getElementById('dispName').innerText = document.getElementById('pName').value;
+            document.getElementById('topBar').style.display = 'block';
+            loadMCQ(); showScreen('screen-mcq');
+        }
+
+        // --- دوال المرحلة الأولى ---
+        function loadMCQ() {
+            if(mcqIdx >= mcqData.length) { loadTF(); showScreen('screen-tf'); return; }
+            const item = mcqData[mcqIdx];
+            document.getElementById('mcq-text').innerText = item.q;
+            const container = document.getElementById('mcq-options');
+            container.innerHTML = ""; document.getElementById('mcq-fb').innerText = "";
+            item.o.forEach((txt, i) => {
+                const b = document.createElement('button'); b.className = 'opt-btn'; b.innerText = txt;
+                b.onclick = () => {
+                    const btns = container.querySelectorAll('button'); btns.forEach(btn => btn.disabled = true);
+                    if(i === item.a) { score++; b.classList.add('opt-correct'); document.getElementById('mcq-fb').innerText = "إجابة صحيحة ✨"; } 
+                    else { b.classList.add('opt-wrong'); container.children[item.a].classList.add('opt-correct'); document.getElementById('mcq-fb').innerText = "الإجابة الصحيحة بالأخضر"; }
+                    updateScore(); mcqIdx++; setTimeout(loadMCQ, 1500);
+                };
+                container.appendChild(b);
+            });
+        }
+
+        // --- دوال المرحلة الثانية ---
+        function loadTF() {
+            if(tfIdx >= tfData.length) { loadDrag(); showScreen('screen-drag'); return; }
+            document.getElementById('tf-text').innerText = tfData[tfIdx].q;
+            document.getElementById('tf-fb').innerText = "";
+        }
+
+        function ansTF(ans) {
+            const item = tfData[tfIdx];
+            const fb = document.getElementById('tf-fb');
+            if(ans === item.a) { score++; fb.innerText = "صحيح! أحسنتِ ✅"; fb.style.color = "#27ae60"; } 
+            else { fb.innerText = "خطأ ❌"; fb.style.color = "#e74c3c"; }
+            updateScore(); tfIdx++; setTimeout(loadTF, 1300);
+        }
+
+        // --- دوال المرحلة الثالثة (السحب والإفلات) ---
+        function loadDrag() {
+            const container = document.getElementById('drag-items-container');
+            container.innerHTML = "";
+            // خلط الكلمات عشوائياً
+            let shuffled = dragWords.sort(() => Math.random() - 0.5);
+            shuffled.forEach(w => {
+                const div = document.createElement('div');
+                div.className = 'drag-item';
+                div.id = w.id;
+                div.innerText = w.text;
+                div.setAttribute('data-type', w.type);
+                div.draggable = true;
+                
+                // أحداث السحب للكمبيوتر
+                div.ondragstart = (e) => { e.dataTransfer.setData("text", e.target.id); };
+                
+                // أحداث النقر للأجهزة اللوحية والجوالات كبديل للسحب
+                div.onclick = (e) => selectItemForTap(e.target);
+                
+                container.appendChild(div);
+            });
+        }
+
+        // منطق السحب بالماوس
+        function allowDrop(ev) { ev.preventDefault(); ev.currentTarget.classList.add('over'); }
+        function dragLeave(ev) { ev.currentTarget.classList.remove('over'); }
+        function drop(ev) {
+            ev.preventDefault();
+            ev.currentTarget.classList.remove('over');
+            let data = ev.dataTransfer.getData("text");
+            if(!data) return;
+            let draggedEl = document.getElementById(data);
+            processDrop(draggedEl, ev.currentTarget);
+        }
+
+        // منطق النقر (للجوالات)
+        let selectedDragItem = null;
+        function selectItemForTap(el) {
+            if(!el.draggable) return;
+            document.querySelectorAll('.drag-item').forEach(d => d.classList.remove('selected'));
+            selectedDragItem = el;
+            el.classList.add('selected');
+        }
+        function tapDrop(ev, zone) {
+            if(!selectedDragItem) return;
+            processDrop(selectedDragItem, zone);
+        }
+
+        // معالجة الإفلات المشتركة
+        function processDrop(itemEl, zoneEl) {
+            let targetType = zoneEl.getAttribute('data-type');
+            let itemType = itemEl.getAttribute('data-type');
+
+            if(targetType === itemType) {
+                // إجابة صحيحة
+                itemEl.classList.remove('selected');
+                itemEl.classList.add('dropped-item');
+                itemEl.classList.remove('drag-item');
+                itemEl.draggable = false;
+                itemEl.onclick = null; // تعطيل النقر بعد التثبيت
+                zoneEl.querySelector('.drop-area').appendChild(itemEl);
+                score++; updateScore(); dragCompleted++;
+                selectedDragItem = null;
+                
+                if(dragCompleted === dragWords.length) {
+                    document.getElementById('btn-finish-drag').style.display = "block";
+                }
+            } else {
+                // إجابة خاطئة
+                itemEl.style.backgroundColor = "#ff7675";
+                itemEl.style.color = "#fff";
+                setTimeout(() => {
+                    itemEl.style.backgroundColor = "";
+                    itemEl.style.color = "";
+                    itemEl.classList.remove('selected');
+                    selectedDragItem = null;
+                }, 800);
+            }
+        }
+
+        // --- دوال مساعدة ونهائية ---
+        function updateScore() { document.getElementById('dispScore').innerText = score; }
+
+        function showScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            if(id !== 'none') document.getElementById(id).classList.add('active');
+        }
+
+        function finish() {
+            showScreen('none'); document.getElementById('topBar').style.display = 'none';
+            document.getElementById('cert-screen').style.display = 'flex';
+            document.getElementById('cert-name').innerText = document.getElementById('pName').value;
+            document.getElementById('cert-grade').innerText = document.getElementById('pGrade').value;
+            document.getElementById('cert-score').innerText = score;
+            document.getElementById('cert-date').innerText = new Date().toLocaleDateString('ar-SA');
+            let msg = "";
+            if(score >= 22) msg = "مبارك لكِ! أداء مذهل وإتقان كامل لدرس البيانات والمعلومات.";
+            else if(score >= 15) msg = "أداء متميز! لديكِ معرفة رائعة بأساسيات البيانات والمعلومات.";
+            else msg = "محاولة جيدة! استمري في المراجعة لتصبحي خبيرة رقمية مذهلة.";
+            document.getElementById('cert-msg').innerText = msg;
+        }
+    </script>
+</body>
+</html>
